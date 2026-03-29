@@ -256,6 +256,8 @@ func centerKeyPopPath(
 ///   - char: the character of the key.
 ///   - displayChar: the character to display on the pop up.
 func getKeyPopPath(key: UIButton, layer: CAShapeLayer, char: String, displayChar: String) {
+  // Get the key index. It is used when characters are both left and right keys, for example "§" on some Swedish iPad keyboards. If idx != 0, then it is a right key.
+  let idx = (key as? KeyboardKey)?.idx
   // Get the frame in respect to the superview.
   if let frame = key.superview?.convert(key.frame, to: nil) {
     var labelVertPosition = frame.origin.y - key.frame.height / 1.75
@@ -275,130 +277,130 @@ func getKeyPopPath(key: UIButton, layer: CAShapeLayer, char: String, displayChar
       ).cgPath
       keyPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.5, y: labelVertPosition)
       keyHoldPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.5, y: labelVertPosition)
-    } else if leftKeyChars.contains(char) {
-      layer.path = leftKeyPopPath(
-        startX: frame.origin.x, startY: frame.origin.y,
-        keyWidth: key.frame.width, keyHeight: key.frame.height, char: char
-      ).cgPath
-      keyPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.85, y: labelVertPosition)
-      keyHoldPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.85, y: labelVertPosition)
-      if DeviceType.isPad || (DeviceType.isPhone && isLandscapeView) {
-        keyPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.65, y: labelVertPosition)
-        keyHoldPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.65, y: labelVertPosition)
+    } else if leftKeyChars.contains(char) && idx == 0 {
+        layer.path = leftKeyPopPath(
+          startX: frame.origin.x, startY: frame.origin.y,
+          keyWidth: key.frame.width, keyHeight: key.frame.height, char: char
+        ).cgPath
+        keyPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.85, y: labelVertPosition)
+        keyHoldPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.85, y: labelVertPosition)
+        if DeviceType.isPad || (DeviceType.isPhone && isLandscapeView) {
+          keyPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.65, y: labelVertPosition)
+          keyHoldPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.65, y: labelVertPosition)
+        }
+      } else if rightKeyChars.contains(char) {
+        layer.path = rightKeyPopPath(
+          startX: frame.origin.x, startY: frame.origin.y,
+          keyWidth: key.frame.width, keyHeight: key.frame.height, char: char
+        ).cgPath
+        keyPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.15, y: labelVertPosition)
+        keyHoldPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.15, y: labelVertPosition)
+        if DeviceType.isPad || (DeviceType.isPhone && isLandscapeView) {
+          keyPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.35, y: labelVertPosition)
+          keyHoldPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.35, y: labelVertPosition)
+        }
       }
-    } else if rightKeyChars.contains(char) {
-      layer.path = rightKeyPopPath(
-        startX: frame.origin.x, startY: frame.origin.y,
-        keyWidth: key.frame.width, keyHeight: key.frame.height, char: char
-      ).cgPath
-      keyPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.15, y: labelVertPosition)
-      keyHoldPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.15, y: labelVertPosition)
-      if DeviceType.isPad || (DeviceType.isPhone && isLandscapeView) {
-        keyPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.35, y: labelVertPosition)
-        keyHoldPopChar.center = CGPoint(x: frame.origin.x + key.frame.width * 0.35, y: labelVertPosition)
+
+      layer.strokeColor = keyShadowColor
+      layer.fillColor = keyColor.cgColor
+      layer.lineWidth = 1.0
+    }
+  }
+
+  /// Sizes the character displayed on a key pop for iPhones.
+  ///
+  /// - Parameters
+  ///   - char: the character of the key.
+  func setPhoneKeyPopCharSize(char: String) {
+    if keyboardState != .letters && !["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].contains(char) {
+      if isLandscapeView {
+        keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.25)
+        keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.25)
+      } else {
+        keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 1.15)
+        keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 1.15)
+      }
+    } else if shiftButtonState == .shift || shiftButtonState == .capsLocked {
+      if isLandscapeView {
+        keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.15)
+        keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.15)
+      } else {
+        keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 1)
+        keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 1)
+      }
+    } else {
+      if isLandscapeView {
+        keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2)
+        keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2)
+      } else {
+        keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 0.9)
+        keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 0.9)
       }
     }
-
-    layer.strokeColor = keyShadowColor
-    layer.fillColor = keyColor.cgColor
-    layer.lineWidth = 1.0
-  }
-}
-
-/// Sizes the character displayed on a key pop for iPhones.
-///
-/// - Parameters
-///   - char: the character of the key.
-func setPhoneKeyPopCharSize(char: String) {
-  if keyboardState != .letters && !["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].contains(char) {
-    if isLandscapeView {
-      keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.25)
-      keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.25)
-    } else {
-      keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 1.15)
-      keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 1.15)
-    }
-  } else if shiftButtonState == .shift || shiftButtonState == .capsLocked {
-    if isLandscapeView {
-      keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.15)
-      keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.15)
-    } else {
-      keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 1)
-      keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 1)
-    }
-  } else {
-    if isLandscapeView {
-      keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2)
-      keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2)
-    } else {
-      keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 0.9)
-      keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 0.9)
-    }
-  }
-}
-
-/// Sizes the character displayed on a key pop for iPads.
-///
-/// - Parameters
-///   - char: the character of the key.
-func setPadKeyPopCharSize(char: String) {
-  if keyboardState != .letters, !["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].contains(char) {
-    if isLandscapeView {
-      keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.75)
-      keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.75)
-    } else {
-      keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.5)
-      keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.5)
-    }
-  } else if keyboardState == .letters, shiftButtonState == .shift || shiftButtonState == .capsLocked {
-    if isLandscapeView {
-      keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.5)
-      keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.5)
-    } else {
-      keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2)
-      keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2)
-    }
-  } else {
-    if isLandscapeView {
-      keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.25)
-      keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.25)
-    } else {
-      keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 1.75)
-      keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 1.75)
-    }
-  }
-}
-
-/// Sizes the character displayed on a key pop.
-///
-/// - Parameters
-///   - char: the character of the key.
-func setKeyPopCharSize(char: String) {
-  if DeviceType.isPhone {
-    setPhoneKeyPopCharSize(char: char)
-  } else if DeviceType.isPad {
-    setPadKeyPopCharSize(char: char)
-  }
-}
-
-/// Creates and styles the pop up animation of a key.
-///
-/// - Parameters
-///   - key: the key pressed.
-///   - layer: the layer to be set.
-///   - char: the character of the key.
-///   - displayChar: the character to display on the pop up.
-func genKeyPop(key: UIButton, layer: CAShapeLayer, char: String, displayChar: String) {
-  setKeyPopCharSize(char: char)
-
-  let popLbls = [keyPopChar, keyHoldPopChar]
-  for lbl in popLbls {
-    lbl.text = displayChar
-    lbl.backgroundColor = .clear
-    lbl.textAlignment = .center
-    lbl.textColor = keyCharColor
-    lbl.sizeToFit()
   }
 
-  getKeyPopPath(key: key, layer: layer, char: char, displayChar: displayChar)
-}
+  /// Sizes the character displayed on a key pop for iPads.
+  ///
+  /// - Parameters
+  ///   - char: the character of the key.
+  func setPadKeyPopCharSize(char: String) {
+    if keyboardState != .letters, !["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"].contains(char) {
+      if isLandscapeView {
+        keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.75)
+        keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.75)
+      } else {
+        keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.5)
+        keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.5)
+      }
+    } else if keyboardState == .letters, shiftButtonState == .shift || shiftButtonState == .capsLocked {
+      if isLandscapeView {
+        keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.5)
+        keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.5)
+      } else {
+        keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2)
+        keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2)
+      }
+    } else {
+      if isLandscapeView {
+        keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.25)
+        keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 2.25)
+      } else {
+        keyPopChar.font = .systemFont(ofSize: letterKeyWidth / 1.75)
+        keyHoldPopChar.font = .systemFont(ofSize: letterKeyWidth / 1.75)
+      }
+    }
+  }
+
+  /// Sizes the character displayed on a key pop.
+  ///
+  /// - Parameters
+  ///   - char: the character of the key.
+  func setKeyPopCharSize(char: String) {
+    if DeviceType.isPhone {
+      setPhoneKeyPopCharSize(char: char)
+    } else if DeviceType.isPad {
+      setPadKeyPopCharSize(char: char)
+    }
+  }
+
+  /// Creates and styles the pop up animation of a key.
+  ///
+  /// - Parameters
+  ///   - key: the key pressed.
+  ///   - layer: the layer to be set.
+  ///   - char: the character of the key.
+  ///   - displayChar: the character to display on the pop up.
+  func genKeyPop(key: UIButton, layer: CAShapeLayer, char: String, displayChar: String) {
+    setKeyPopCharSize(char: char)
+
+    let popLbls = [keyPopChar, keyHoldPopChar]
+    for lbl in popLbls {
+      lbl.text = displayChar
+      lbl.backgroundColor = .clear
+      lbl.textAlignment = .center
+      lbl.textColor = keyCharColor
+      lbl.sizeToFit()
+    }
+
+    getKeyPopPath(key: key, layer: layer, char: char, displayChar: displayChar)
+  }
