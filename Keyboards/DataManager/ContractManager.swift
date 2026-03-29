@@ -45,7 +45,7 @@ class ContractManager {
             numbers: nil,
             genders: nil,
             conjugations: nil,
-            declensions: nil,
+            declensions: nil
         )
     }
 }
